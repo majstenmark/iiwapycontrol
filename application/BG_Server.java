@@ -754,7 +754,8 @@ public static boolean sendCommand(String s)
 	if(soc.isClosed())return false;
 	
 	try {
-		soc.getOutputStream().write(s.getBytes("US-ASCII"));
+		soc.getOutputStream().write(s.getBytes("UTF-8"));
+		soc.getOutputStream().flush();
 		return true;
 		/*
 		OutputStream output = soc.getOutputStream();

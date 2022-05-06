@@ -25,7 +25,7 @@ def getDoubleFromString(message,size):
     return doubleVals
     
 def directKinematics(q):
-    if(len(q)<>7):
+    if(len(q)!=7):
         print('Error in function [directKinematics]')
         print('The size of the joint angles shall be 7')
         return

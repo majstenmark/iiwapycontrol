@@ -11,7 +11,7 @@ from iiwaPy import iiwaPy
 import time
 import math
 # Connect to the robot
-ip='192.168.1.2'
+ip='172.31.1.147'
 #ip='localhost'
 iiwa=iiwaPy(ip)
 iiwa.setBlueOn()
@@ -27,7 +27,7 @@ try:
     vRel=[0.1]
     print("With a relative velocity")
     print(vRel[0])
-    #iiwa.movePTPJointSpace(jPos,vRel)
+    iiwa.movePTPJointSpace(jPos,vRel)
     # Get current cartezian position
     print("Current Cartesian pose is")
     cPos=iiwa.getEEFPos()
@@ -74,7 +74,6 @@ try:
     iiwa.movePTPLineEefRelEef(pos,vel)
     # Performing Arc motion
     # Move to an initial position
-    exit()
     print('Moving on Arcs')
     print('First going to some initial configuration')
     jPos=[0,-math.pi*10/180,0,-math.pi*100/180,math.pi*90/180,math.pi/2,0];

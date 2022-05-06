@@ -6,7 +6,7 @@ updated 1st-Oct-2019
 @author: Mohammad SAFEEA
 """
 import math
-import StringIO
+from io import StringIO ## for Python 3
 from Senders import Senders
 from Getters import Getters
 import sys
@@ -38,19 +38,19 @@ class PTP:
         #print(c)
         #print(k)
         #print(vel)
-        if(len(c)<>3):
+        if(len(c)!=3):
             print('Error in function [movePTPArc_AC]')
             print('Center of circle should be an array of three lements')
             return           
-        if(len(k)<>3):
+        if(len(k)!=3):
             print('Error in function [movePTPArc_AC]')
             print('Orientation vector should be an array of three lements')
             return  
-        if(len(theta)<>1):
+        if(len(theta)!=1):
             print('Error in function [movePTPArc_AC]')
             print('Angle of an arc should be a scalar')
             return   
-        if(len(vel)<>1):
+        if(len(vel)!=1):
             print('Error in function [movePTPArc_AC]')
             print('Relative velocity should be a scalar')
             return          
@@ -103,7 +103,7 @@ class PTP:
         return c1
 
     def checkErrorInRelVel(self,relVel):
-        if(len(relVel)<>1):
+        if(len(relVel)!=1):
             print('Relative velocity should be a scalar')
             return  True
         if(relVel>1):
@@ -118,15 +118,15 @@ class PTP:
         return False
         
     def movePTPArcXY_AC(self,theta,c,vel):
-        if(len(theta)<>1):
+        if(len(theta)!=1):
             print('Error in function [movePTPArcXY_AC]')
             print('Roation angle should be a scalar')
             return
-        if(len(c)<>2):
+        if(len(c)!=2):
             print('Error in function [movePTPArcXY_AC]')
             print('Center of rotation should be an array of two elements [x,y]')
             return
-        if(len(vel)<>1):
+        if(len(vel)!=1):
             print('Error in function [movePTPArcXY_AC]')
             print('Velocity should be a scalar')
             return
@@ -136,15 +136,15 @@ class PTP:
         self.movePTPArc_AC(theta,c1,k,vel)
         
     def movePTPArcXZ_AC(self,theta,c,vel):
-        if(len(theta)<>1):
+        if(len(theta)!=1):
             print('Error in function [movePTPArcXY_AC]')
             print('Roation angle should be a scalar')
             return
-        if(len(c)<>2):
+        if(len(c)!=2):
             print('Error in function [movePTPArcXY_AC]')
             print('Center of rotation should be an array of two elements [x,z]')
             return
-        if(len(vel)<>1):
+        if(len(vel)!=1):
             print('Error in function [movePTPArcXY_AC]')
             print('Velocity should be a scalar')
             return
@@ -154,15 +154,15 @@ class PTP:
         self.movePTPArc_AC(theta,c1,k,vel)
         
     def movePTPArcYZ_AC(self,theta,c,vel):
-        if(len(theta)<>1):
+        if(len(theta)!=1):
             print('Error in function [movePTPArcYZ_AC]')
             print('Roation angle should be a scalar')
             return
-        if(len(c)<>2):
+        if(len(c)!=2):
             print('Error in function [movePTPArcYZ_AC]')
             print('Center of rotation should be an array of two elements [y,z]')
             return
-        if(len(vel)<>1):
+        if(len(vel)!=1):
             print('Error in function [movePTPArcYZ_AC]')
             print('Velocity should be a scalar')
             return
@@ -172,19 +172,19 @@ class PTP:
         self.movePTPArc_AC(theta,c1,k,vel)
         
     def movePTPCirc1OrintationInter(self, f1,f2, relVel):
-        if(len(f1)<>6):
+        if(len(f1)!=6):
             print('Error in function [movePTPCirc1OrintationInter]')
             print('The first frame should be an array of 6 lements [x,y,z,alpha,beta,gamma]')
             return
-        if(len(f2)<>6):
+        if(len(f2)!=6):
             print('Error in function [movePTPCirc1OrintationInter]')
             print('The second frame should be an array of 6 lements [x,y,z,alpha,beta,gamma]')
             return
-        if (len(relVel)<>1):
+        if (len(relVel)!=1):
             print('Error in function [movePTPCirc1OrintationInter]')
             print('Relative velocity should be a scalar')
             return
-        buff = StringIO.StringIO(2048)
+        buff = StringIO('2048')
         buff.write('jRelVel_')
         buff.write(str(relVel[0]))
         buff.write('_')
@@ -197,12 +197,12 @@ class PTP:
         self.awaitConfirmation() # bug fixed on 1st October 2019, awaiting end of blocking motion
 
     def movePTPLineEEF(self,pos,vel):
-        if(len(vel)<>1):
+        if(len(vel)!=1):
             print('Error in function [movePTPLineEEF]')
             print('Velocity shall be a scalar')
             return
         if (len(pos)==6):
-            buff = StringIO.StringIO(2048)
+            buff = StringIO('2048')
             buff.write('jRelVel_')
             buff.write(str(vel[0]))
             buff.write('_')
@@ -217,12 +217,12 @@ class PTP:
             print('Position should be an array of 6 elements')   
             
     def movePTPLineEefRelEef(self,pos,vel):
-        if (len(vel)<>1):
+        if (len(vel)!=1):
             print('Error in function [movePTPLineEefRelEef]')
             print('Velocity should be a scalar')
             return
         if (len(pos)==3):
-            buff = StringIO.StringIO(2048)
+            buff = StringIO('2048')
             buff.write('jRelVel_')
             buff.write(str(vel[0]))
             buff.write('_')
@@ -241,11 +241,11 @@ class PTP:
             print('Position should be an array of 3 elements [x,y,z]')
              
     def movePTPLineEefRelBase(self,pos,vel):
-        if(len(pos)<>3):
+        if(len(pos)!=3):
             print('Position should be an array of three lements [x,y,z]')
             return
         if (len(vel)==1):
-            buff = StringIO.StringIO(2048)
+            buff = StringIO('2048')
             buff.write('jRelVel_')
             buff.write(str(vel[0]))
             buff.write('_')
@@ -264,12 +264,12 @@ class PTP:
 
 # joint space
     def movePTPJointSpace(self,jpos,relVel):
-        if(len(jpos)<>7):
+        if(len(jpos)!=7):
             print('Error in function [movePTPHomeJointSpace]')
             print('Joints positions shall be an array of 7 elements')
             return
         if (len(relVel)==1):
-            buff = StringIO.StringIO(2048)
+            buff = StringIO('2048')
             buff.write('jRelVel_')
             buff.write(str(relVel[0]))
             buff.write('_')
@@ -285,7 +285,7 @@ class PTP:
              
     def movePTPHomeJointSpace(self,relVel):
         if (len(relVel)==1):
-            buff = StringIO.StringIO(2048)
+            buff = StringIO('2048')
             buff.write('jRelVel_')
             buff.write(str(relVel[0]))
             buff.write('_')
@@ -302,7 +302,7 @@ class PTP:
 
         
     def movePTPTransportPositionJointSpace(self,relvel):
-        if(len(relvel<>1)):
+        if(len(relvel!=1)):
             print('Error in function [movePTPHomeJointSpace]')
             print('Relative velocity should be a scalar')
             return
