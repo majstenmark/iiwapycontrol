@@ -1,0 +1,797 @@
+package application;
+
+
+//Copyright: Mohammad SAFEEA, 18th-April-2018
+//Support iiwa 14 R 820
+//Flange functions are disabled, no flange is used in the script
+
+import static com.kuka.roboticsAPI.motionModel.BasicMotions.ptp;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.util.Scanner;
+import java.util.StringTokenizer;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
+
+import sun.security.action.GetLongAction;
+
+
+//import com.kuka.connectivity.motionModel.directServo.DirectServo;
+//import com.kuka.connectivity.motionModel.directServo.IDirectServoRuntime;
+//import com.kuka.generated.ioAccess.MediaFlangeIOGroup;
+import com.kuka.common.ThreadUtil;
+import com.kuka.roboticsAPI.applicationModel.RoboticsAPIApplication;
+import com.kuka.roboticsAPI.applicationModel.RoboticsAPIApplicationState;
+import com.kuka.roboticsAPI.applicationModel.tasks.CycleBehavior;
+import com.kuka.roboticsAPI.applicationModel.tasks.RoboticsAPIBackgroundTask;
+import com.kuka.roboticsAPI.controllerModel.Controller;
+import com.kuka.roboticsAPI.deviceModel.JointPosition;
+import com.kuka.roboticsAPI.deviceModel.LBR;
+import com.kuka.roboticsAPI.geometricModel.Frame;
+
+public class BG_Server extends RoboticsAPIBackgroundTask {
+
+//////////////////////////For testing
+    private static String msg = "";
+    private static String echo = "";
+    ////////////////////////
+    
+	//private MediaFlangeIOGroup daIO;
+	
+	private static boolean appRunning;
+	private int _port;
+	private int _timeOut;
+	private static ServerSocket ss;
+	private static Socket soc;
+	
+    //private static final String stopCharacter="\n"+Character.toString((char)(10));
+    private static final String stopCharacter=Character.toString((char)(10));
+    private static final String ack="done"+stopCharacter;
+
+   
+    public void initialize() {
+    	appRunning = true;
+    	_port=30001;
+		_timeOut=60*1000;  // milli seconds
+		
+   }
+    
+
+public void run(){
+	// TODO Auto-generated method stub
+	//if(appRunning){
+	try {
+		ss= new ServerSocket(_port);
+		try
+		{
+		ss.setSoTimeout(_timeOut);
+		soc= ss.accept();
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			ss.close();
+			MyTask.terminateFlag=true;
+			return;
+		}
+		Scanner scan= new Scanner(soc.getInputStream());
+		// In this loop you shall check the input signal
+		while((soc.isConnected() && appRunning))
+		{
+			if(scan.hasNextLine())
+			{			
+				MyTask.daCommand=scan.nextLine();
+				if(!MyTask.daCommand.equals("")) System.out.println("BG: got command " + MyTask.daCommand);
+				
+				 
+				if(MyTask.daCommand.startsWith("jf_"))
+	        	{
+	        		boolean tempBool=getTheJointsf(MyTask.daCommand);
+	        		MyTask.daCommand="";
+	        		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+	        		if(tempBool==false)
+	        		{
+	        			MyTask.directSmart_ServoMotionFlag=false;
+	        		}
+	        		// this.sendCommand(ack); no acknowledgement in fast execution mode
+	        	}
+				// If the signal is equal to end, you shall turn off the server.
+				else if(MyTask.daCommand.startsWith("end"))
+				{
+					/* Close all existing loops:
+					/  1- The BackgroundTask loop.
+					 * 2- The main class, MatlabToolboxServer loops:
+					 * 		a- The while loop in run, using the flag: MatlabToolboxServer.terminateFlag.
+					 * 		b- The direct servo loop, using the flag: MatlabToolboxServer.directServoMotionFlag.
+					*/
+					MyTask.directSmart_ServoMotionFlag=false;
+					MyTask.terminateFlag=true;
+					break;						
+				}
+				// Put the direct_servo joint angles command in the joint variable
+				else if(MyTask.daCommand.startsWith("jp"))
+	        	{
+	        		updateJointsPositionArray();
+	        	}
+				else if(MyTask.daCommand.startsWith("vel"))
+	        	{
+	        		updateVelocityArrays();
+	        	}
+				else if(MyTask.daCommand.startsWith("cArtixanPosition"))
+	        	{
+					if(MyTask.daCommand.startsWith("cArtixanPositionCirc1"))
+					{
+		        		boolean tempBool=getEEFposCirc1(MyTask.daCommand);
+		        		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+		        		if(tempBool==false)
+		        		{
+		        			//MatlabToolboxServer.directServoMotionFlag=false;
+		        		}
+		        		this.sendCommand(ack);
+		        		MyTask.daCommand="";
+					}
+					else if(MyTask.daCommand.startsWith("cArtixanPositionCirc2"))
+					{
+		        		boolean tempBool=getEEFposCirc2(MyTask.daCommand);
+		        		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+		        		if(tempBool==false)
+		        		{
+		        			//MatlabToolboxServer.directServoMotionFlag=false;
+		        		}
+		        		this.sendCommand(ack);
+		        		MyTask.daCommand="";
+					}
+					else
+					{
+		        		boolean tempBool=getEEFpos(MyTask.daCommand);
+		        		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+		        		if(tempBool==false)
+		        		{
+		        			//MatlabToolboxServer.directServoMotionFlag=false;
+		        		}
+		        		this.sendCommand(ack);
+		        		MyTask.daCommand="";
+					}
+	        	}
+				
+				// This insturction is used to turn_off the direct_servo controller
+	        	else if(MyTask.daCommand.startsWith("stopDirectServoJoints"))
+	        	{
+	        		MyTask.directSmart_ServoMotionFlag=false;
+	        		this.sendCommand(ack);
+	        		MyTask.daCommand="";
+	        	}
+				else if(MyTask.daCommand.startsWith("DcSe"))
+	        	{
+	        		updateEEFPositionArray();
+	        	}
+	        	else
+	        	{
+	        		// inquiring data from server
+	        		dataAqcuisitionRequest();
+	        	}
+				
+			}				
+		}
+	} catch (IOException e1) {
+		// TODO Auto-generated catch block
+		e1.printStackTrace();
+		MyTask.terminateFlag=true;
+		appRunning = false; // soc not connected
+	}
+	
+	//Close the socket!!!
+	try {
+		MyTask.terminateFlag=true;
+		soc.close();
+		ss.close();
+	} catch (IOException e) {
+		e.printStackTrace();
+	}
+	
+	
+	
+	
+}
+
+private void updateVelocityArrays()
+{
+	if(MyTask.daCommand.startsWith("velJDC_"))
+	{
+		boolean tempBool=getJointsVelocitiesForVelocityContrtolMode(MyTask.daCommand);
+		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+		if(tempBool==false)
+		{
+		MyTask.directSmart_ServoMotionFlag=false;
+		}
+		this.sendCommand(ack);
+		MyTask.daCommand="";
+	}
+	else if(MyTask.daCommand.startsWith("velJDCExT_"))
+	{
+		boolean tempBool=getJointsVelocitiesForVelocityContrtolMode(MyTask.daCommand);
+		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+		if(tempBool==false)
+		{
+		MyTask.directSmart_ServoMotionFlag=false;
+		}
+		MyTask.svr.sendJointsExternalTorquesToClient();
+		MyTask.daCommand="";
+	}
+	else if(MyTask.daCommand.startsWith("velJDCMT_"))
+	{
+		boolean tempBool=getJointsVelocitiesForVelocityContrtolMode(MyTask.daCommand);
+		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+		if(tempBool==false)
+		{
+		MyTask.directSmart_ServoMotionFlag=false;
+		}
+		MyTask.svr.sendJointsMeasuredTorquesToClient();
+		MyTask.daCommand="";
+	}
+	else if(MyTask.daCommand.startsWith("velJDCEEfP_"))
+	{
+		boolean tempBool=getJointsVelocitiesForVelocityContrtolMode(MyTask.daCommand);
+		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+		if(tempBool==false)
+		{
+		MyTask.directSmart_ServoMotionFlag=false;
+		}
+		MyTask.svr.sendEEFforcesToClient();
+		MyTask.daCommand="";
+	}
+	else if(MyTask.daCommand.startsWith("velJDCJP_"))
+	{
+		boolean tempBool=getJointsVelocitiesForVelocityContrtolMode(MyTask.daCommand);
+		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+		if(tempBool==false)
+		{
+		MyTask.directSmart_ServoMotionFlag=false;
+		}
+		MyTask.svr.sendJointsPositionsToClient();
+		MyTask.daCommand="";
+	}
+}
+
+private void updateEEFPositionArray()
+{
+	//////////////////////////////////////////////////
+	//Start of server update functions
+	/////////////////////////////////////////////////////						
+	
+	if(MyTask.daCommand.startsWith("DcSeCar_"))
+	{
+		boolean tempBool=getThePositions(MyTask.daCommand);
+		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+		if(tempBool==false)
+		{
+		MyTask.directSmart_ServoMotionFlag=false;
+		}
+		// this.sendCommand(ack);
+		MyTask.daCommand="";
+	}
+	else if(MyTask.daCommand.startsWith("DcSeCarExT_"))
+	{
+		boolean tempBool=getTheJoints(MyTask.daCommand);
+		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+		if(tempBool==false)
+		{
+		MyTask.directSmart_ServoMotionFlag=false;
+		}
+		MyTask.svr.sendJointsExternalTorquesToClient();
+		MyTask.daCommand="";
+	}
+	else if(MyTask.daCommand.startsWith("DcSeCarMT_"))
+	{
+		boolean tempBool=getTheJoints(MyTask.daCommand);
+		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+		if(tempBool==false)
+		{
+		MyTask.directSmart_ServoMotionFlag=false;
+		}
+		MyTask.svr.sendJointsMeasuredTorquesToClient();
+		MyTask.daCommand="";
+	}
+	else if(MyTask.daCommand.startsWith("DcSeCarEEfP_"))
+	{
+		boolean tempBool=getTheJoints(MyTask.daCommand);
+		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+		if(tempBool==false)
+		{
+		MyTask.directSmart_ServoMotionFlag=false;
+		}
+		MyTask.svr.sendEEFforcesToClient();
+		MyTask.daCommand="";
+	}
+	else if(MyTask.daCommand.startsWith("DcSeCarJP_"))
+	{
+		boolean tempBool=getTheJoints(MyTask.daCommand);
+		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+		if(tempBool==false)
+		{
+		MyTask.directSmart_ServoMotionFlag=false;
+		}
+		MyTask.svr.sendJointsPositionsToClient();
+		MyTask.daCommand="";
+	}
+	
+	//////////////////////////////////////////////////
+	//End of Servo joints update functions
+	//////////////////////////////////////////////////////
+}
+
+private boolean getThePositions(String thestring) {
+	StringTokenizer st= new StringTokenizer(thestring,"_");
+	if(st.hasMoreTokens())
+	{
+		String temp=st.nextToken();
+			int j=0;
+			while(st.hasMoreTokens())
+			{
+				if(j<6)
+				{
+					//getLogger().warn(jointString);
+					try
+					{
+						MyTask.EEfServoPos[j]=Double.parseDouble(st.nextToken());
+					}
+					catch(Exception e)
+					{
+						return false;
+					}						
+				}					
+				j++;
+			}
+			MyTask.daCommand="";
+			return true;
+			
+		}
+		else
+		{
+			return false;
+		}
+}
+
+private boolean getJointsVelocitiesForVelocityContrtolMode(String thestring) {
+	StringTokenizer st= new StringTokenizer(thestring,"_");
+	if(st.hasMoreTokens())
+	{
+		String temp=st.nextToken();
+			int j=0;
+			while(st.hasMoreTokens())
+			{
+				if(j<7)
+				{
+					//getLogger().warn(jointString);
+					try
+					{
+						MyTask.jvel[j]=
+						Double.parseDouble(st.nextToken());
+					}
+					catch(Exception e)
+					{
+						return false;
+					}						
+				}					
+				j++;
+			}
+			MyTask.daCommand="";
+			return true;
+			
+		}
+		else
+		{
+			return false;
+		}
+}
+
+
+private void updateJointsPositionArray()
+{
+	//////////////////////////////////////////////////
+	//Start of server update functions
+	/////////////////////////////////////////////////////						
+	
+	if(MyTask.daCommand.startsWith("jp_"))
+	{
+	boolean tempBool=getTheJoints(MyTask.daCommand);
+	// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+	if(tempBool==false)
+	{
+	MyTask.directSmart_ServoMotionFlag=false;
+	}
+	this.sendCommand(ack);
+	MyTask.daCommand="";
+	}
+	else if(MyTask.daCommand.startsWith("jpExT_"))
+	{
+	boolean tempBool=getTheJoints(MyTask.daCommand);
+	// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+	if(tempBool==false)
+	{
+	MyTask.directSmart_ServoMotionFlag=false;
+	}
+	MyTask.svr.sendJointsExternalTorquesToClient();
+	MyTask.daCommand="";
+	}
+	else if(MyTask.daCommand.startsWith("jpMT_"))
+	{
+	boolean tempBool=getTheJoints(MyTask.daCommand);
+	// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+	if(tempBool==false)
+	{
+	MyTask.directSmart_ServoMotionFlag=false;
+	}
+	MyTask.svr.sendJointsMeasuredTorquesToClient();
+	MyTask.daCommand="";
+	}
+	else if(MyTask.daCommand.startsWith("jpEEfP_"))
+	{
+	boolean tempBool=getTheJoints(MyTask.daCommand);
+	// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+	if(tempBool==false)
+	{
+	MyTask.directSmart_ServoMotionFlag=false;
+	}
+	MyTask.svr.sendEEFforcesToClient();
+	MyTask.daCommand="";
+	}
+	else if(MyTask.daCommand.startsWith("jpJP_"))
+	{
+	boolean tempBool=getTheJoints(MyTask.daCommand);
+	// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
+	if(tempBool==false)
+	{
+	MyTask.directSmart_ServoMotionFlag=false;
+	}
+	MyTask.svr.sendJointsPositionsToClient();
+	MyTask.daCommand="";
+	}
+	
+	//////////////////////////////////////////////////
+	//End of Servo joints update functions
+	//////////////////////////////////////////////////////
+}
+
+// respond to a data Acquisition Request
+private void dataAqcuisitionRequest()
+{
+	// Inquiring data from server
+	if(MyTask.daCommand.startsWith("getJointsPositions"))
+	{
+		MyTask.svr.sendJointsPositionsToClient();
+		//sendCommand(ack); //this was added!
+		
+		MyTask.daCommand="";
+	}        	
+	// Write output of Mediaflange
+	else if(MyTask.daCommand.startsWith("blueOn"))
+	{
+		MyTask.mff.blueOn();
+		sendCommand(ack);
+		MyTask.daCommand="";
+	}
+	else if(MyTask.daCommand.startsWith("blueOff"))
+	{
+		MyTask.mff.blueOff();
+		sendCommand(ack);
+		MyTask.daCommand="";
+	}
+	else if(MyTask.daCommand.startsWith("pin"))
+	{
+    	if(MyTask.daCommand.startsWith("pin1on"))
+		{
+    		MyTask.mff.pin1On();
+			sendCommand(ack);
+			MyTask.daCommand="";
+		}
+		else if(MyTask.daCommand.startsWith("pin1off"))
+		{
+			MyTask.mff.pin1Off();
+			sendCommand(ack);
+			MyTask.daCommand="";
+		}
+		else if(MyTask.daCommand.startsWith("pin11on"))
+		{
+			MyTask.mff.pin11On();
+			sendCommand(ack);
+			MyTask.daCommand="";
+		}
+		else if(MyTask.daCommand.startsWith("pin11off"))
+		{
+			MyTask.mff.pin11Off();
+			sendCommand(ack);
+			MyTask.daCommand="";
+		}
+		else if(MyTask.daCommand.startsWith("pin2on"))
+		{
+			MyTask.mff.pin2On();
+			sendCommand(ack);
+			MyTask.daCommand="";
+		}
+		else if(MyTask.daCommand.startsWith("pin2off"))
+		{
+			MyTask.mff.pin2Off();
+			sendCommand(ack);
+			MyTask.daCommand="";
+		}
+		else if(MyTask.daCommand.startsWith("pin12on"))
+		{
+			MyTask.mff.pin12On();
+			sendCommand(ack);
+			MyTask.daCommand="";
+		}
+		else if(MyTask.daCommand.startsWith("pin12off"))
+		{
+			MyTask.mff.pin12Off();
+			sendCommand(ack);
+			MyTask.daCommand="";
+		}
+	}
+	// Read input of Mediaflange
+	if(MyTask.daCommand.startsWith("getPin"))
+	{
+		if(MyTask.daCommand.startsWith("getPin10"))
+		{
+			MyTask.mff.getPin10();
+			MyTask.daCommand="";
+		}
+		else if(MyTask.daCommand.startsWith("getPin16"))
+		{
+			MyTask.mff.getPin16();
+			MyTask.daCommand="";
+		}
+		else if(MyTask.daCommand.startsWith("getPin13"))
+		{
+			MyTask.mff.getPin13();
+			MyTask.daCommand="";
+		}
+		else if(MyTask.daCommand.startsWith("getPin3"))
+		{
+			MyTask.mff.getPin3();
+			MyTask.daCommand="";
+		}
+		else if(MyTask.daCommand.startsWith("getPin4"))
+		{
+			MyTask.mff.getPin4();
+			MyTask.daCommand="";
+		}
+	}
+}
+
+
+/* The following function is used to extract the 
+ joint angles from the command
+ */
+private boolean getTheJoints(String thestring)
+{
+	
+	
+	StringTokenizer st= new StringTokenizer(thestring,"_");
+	if(st.hasMoreTokens())
+	{
+		String temp=st.nextToken();
+		if(temp.startsWith("jp"))
+		{
+			int j=0;
+			while(st.hasMoreTokens())
+			{
+				String jointString=st.nextToken();
+				if(j<7)
+				{
+					//getLogger().warn(jointString);
+					MyTask.jpos[j]=Double.parseDouble(jointString);
+				}
+				
+				j++;
+			}
+			MyTask.daCommand="";
+			return true;
+			
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	return false;
+}
+
+/* The following function is used to extract the 
+ joint angles from the command
+ */
+private boolean getTheJointsf(String thestring)
+{
+	
+	
+	StringTokenizer st= new StringTokenizer(thestring,"_");
+	if(st.hasMoreTokens())
+	{
+		String temp=st.nextToken();
+		if(temp.startsWith("jf"))
+		{
+			int j=0;
+			while(st.hasMoreTokens())
+			{
+				String jointString=st.nextToken();
+				if(j<7)
+				{
+					//getLogger().warn(jointString);
+					MyTask.jpos[j]=Double.parseDouble(jointString);
+				}
+				
+				j++;
+			}
+			return true;
+			
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	return false;
+}
+
+private boolean getEEFpos(String thestring)
+{
+	
+	
+	StringTokenizer st= new StringTokenizer(thestring,"_");
+	if(st.hasMoreTokens())
+	{
+		String temp=st.nextToken();
+		if(temp.startsWith("cArtixanPosition"))
+		{
+			int j=0;
+			while(st.hasMoreTokens())
+			{
+				String jointString=st.nextToken();
+				if(j<6)
+				{
+					//getLogger().warn(jointString);
+					MyTask.EEFpos[j]=Double.parseDouble(jointString);
+				}
+				
+				j++;
+			}
+			MyTask.daCommand="";
+			return true;
+			
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	return false;
+}
+
+
+private boolean getEEFposCirc2(String thestring)
+{
+	
+	
+	StringTokenizer st= new StringTokenizer(thestring,"_");
+	if(st.hasMoreTokens())
+	{
+		String temp=st.nextToken();
+		if(temp.startsWith("cArtixanPosition"))
+		{
+			int j=0;
+			while(st.hasMoreTokens())
+			{
+				String jointString=st.nextToken();
+				if(j<6)
+				{
+					//getLogger().warn(jointString);
+					MyTask.EEFposCirc2[j]=Double.parseDouble(jointString);
+				}
+				
+				j++;
+			}
+			MyTask.daCommand="";
+			return true;
+			
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	return false;
+}
+
+
+private boolean getEEFposCirc1(String thestring)
+{
+	
+	
+	StringTokenizer st= new StringTokenizer(thestring,"_");
+	if(st.hasMoreTokens())
+	{
+		String temp=st.nextToken();
+		if(temp.startsWith("cArtixanPosition"))
+		{
+			int j=0;
+			while(st.hasMoreTokens())
+			{
+				String jointString=st.nextToken();
+				if(j<6)
+				{
+					//getLogger().warn(jointString);
+					MyTask.EEFposCirc1[j]=Double.parseDouble(jointString);
+				}
+				
+				j++;
+			}
+			MyTask.daCommand="";
+			return true;
+			
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	return false;
+}
+/* The following function is used to sent a string message
+ * to the server
+ */
+public static boolean sendCommand(String s)
+{
+	if(ss==null)return false;
+	if(soc==null)return false;
+	if(soc.isClosed())return false;
+	
+	try {
+		soc.getOutputStream().write(s.getBytes("US-ASCII"));
+		return true;
+		/*
+		OutputStream output = soc.getOutputStream();
+		int len = s.length() * 100;
+		ByteBuffer b = ByteBuffer.allocate(4);
+		b.putInt(len);
+		output.write(b.array());
+		output.write(s.getBytes("UTF-8"));
+		output.flush();
+		System.out.println("Sent ack");
+		*/
+	} catch (IOException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+	
+	return false;
+	
+}
+
+	public static void stop(){
+		appRunning = false;
+		try {
+			soc.close();
+			ss.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void dispose(){
+		appRunning = false;
+		try {
+			soc.close();
+			ss.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	} 
+}
