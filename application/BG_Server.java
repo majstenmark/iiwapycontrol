@@ -64,18 +64,20 @@ public class BG_Server extends RoboticsAPIBackgroundTask {
 public void run(){
 	// TODO Auto-generated method stub
 	//if(appRunning){
+	while(true){
 	try {
 		ss= new ServerSocket(_port);
 		try
 		{
 		ss.setSoTimeout(_timeOut);
 		soc= ss.accept();
+		appRunning = true;
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 			ss.close();
-			MyTask.terminateFlag=true;
-			return;
+			PythonCommands.terminateFlag=true;
+			//return;
 		}
 		Scanner scan= new Scanner(soc.getInputStream());
 		// In this loop you shall check the input signal
@@ -83,23 +85,23 @@ public void run(){
 		{
 			if(scan.hasNextLine())
 			{			
-				MyTask.daCommand=scan.nextLine();
-				if(!MyTask.daCommand.equals("")) System.out.println("BG: got command " + MyTask.daCommand);
+				PythonCommands.daCommand=scan.nextLine();
+				if(!PythonCommands.daCommand.equals("")) System.out.println("BG: got command " + PythonCommands.daCommand);
 				
 				 
-				if(MyTask.daCommand.startsWith("jf_"))
+				if(PythonCommands.daCommand.startsWith("jf_"))
 	        	{
-	        		boolean tempBool=getTheJointsf(MyTask.daCommand);
-	        		MyTask.daCommand="";
+	        		boolean tempBool=getTheJointsf(PythonCommands.daCommand);
+	        		PythonCommands.daCommand="";
 	        		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 	        		if(tempBool==false)
 	        		{
-	        			MyTask.directSmart_ServoMotionFlag=false;
+	        			PythonCommands.directSmart_ServoMotionFlag=false;
 	        		}
 	        		// this.sendCommand(ack); no acknowledgement in fast execution mode
 	        	}
 				// If the signal is equal to end, you shall turn off the server.
-				else if(MyTask.daCommand.startsWith("end"))
+				else if(PythonCommands.daCommand.startsWith("end"))
 				{
 					/* Close all existing loops:
 					/  1- The BackgroundTask loop.
@@ -107,64 +109,64 @@ public void run(){
 					 * 		a- The while loop in run, using the flag: MatlabToolboxServer.terminateFlag.
 					 * 		b- The direct servo loop, using the flag: MatlabToolboxServer.directServoMotionFlag.
 					*/
-					MyTask.directSmart_ServoMotionFlag=false;
-					MyTask.terminateFlag=true;
+					PythonCommands.directSmart_ServoMotionFlag=false;
+					PythonCommands.terminateFlag=true;
 					break;						
 				}
 				// Put the direct_servo joint angles command in the joint variable
-				else if(MyTask.daCommand.startsWith("jp"))
+				else if(PythonCommands.daCommand.startsWith("jp"))
 	        	{
 	        		updateJointsPositionArray();
 	        	}
-				else if(MyTask.daCommand.startsWith("vel"))
+				else if(PythonCommands.daCommand.startsWith("vel"))
 	        	{
 	        		updateVelocityArrays();
 	        	}
-				else if(MyTask.daCommand.startsWith("cArtixanPosition"))
+				else if(PythonCommands.daCommand.startsWith("cArtixanPosition"))
 	        	{
-					if(MyTask.daCommand.startsWith("cArtixanPositionCirc1"))
+					if(PythonCommands.daCommand.startsWith("cArtixanPositionCirc1"))
 					{
-		        		boolean tempBool=getEEFposCirc1(MyTask.daCommand);
+		        		boolean tempBool=getEEFposCirc1(PythonCommands.daCommand);
 		        		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 		        		if(tempBool==false)
 		        		{
 		        			//MatlabToolboxServer.directServoMotionFlag=false;
 		        		}
 		        		this.sendCommand(ack);
-		        		MyTask.daCommand="";
+		        		PythonCommands.daCommand="";
 					}
-					else if(MyTask.daCommand.startsWith("cArtixanPositionCirc2"))
+					else if(PythonCommands.daCommand.startsWith("cArtixanPositionCirc2"))
 					{
-		        		boolean tempBool=getEEFposCirc2(MyTask.daCommand);
+		        		boolean tempBool=getEEFposCirc2(PythonCommands.daCommand);
 		        		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 		        		if(tempBool==false)
 		        		{
 		        			//MatlabToolboxServer.directServoMotionFlag=false;
 		        		}
 		        		this.sendCommand(ack);
-		        		MyTask.daCommand="";
+		        		PythonCommands.daCommand="";
 					}
 					else
 					{
-		        		boolean tempBool=getEEFpos(MyTask.daCommand);
+		        		boolean tempBool=getEEFpos(PythonCommands.daCommand);
 		        		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 		        		if(tempBool==false)
 		        		{
 		        			//MatlabToolboxServer.directServoMotionFlag=false;
 		        		}
 		        		this.sendCommand(ack);
-		        		MyTask.daCommand="";
+		        		PythonCommands.daCommand="";
 					}
 	        	}
 				
 				// This insturction is used to turn_off the direct_servo controller
-	        	else if(MyTask.daCommand.startsWith("stopDirectServoJoints"))
+	        	else if(PythonCommands.daCommand.startsWith("stopDirectServoJoints"))
 	        	{
-	        		MyTask.directSmart_ServoMotionFlag=false;
+	        		PythonCommands.directSmart_ServoMotionFlag=false;
 	        		this.sendCommand(ack);
-	        		MyTask.daCommand="";
+	        		PythonCommands.daCommand="";
 	        	}
-				else if(MyTask.daCommand.startsWith("DcSe"))
+				else if(PythonCommands.daCommand.startsWith("DcSe"))
 	        	{
 	        		updateEEFPositionArray();
 	        	}
@@ -179,17 +181,19 @@ public void run(){
 	} catch (IOException e1) {
 		// TODO Auto-generated catch block
 		e1.printStackTrace();
-		MyTask.terminateFlag=true;
+		//PythonCommands.terminateFlag=true;
 		appRunning = false; // soc not connected
 	}
 	
 	//Close the socket!!!
 	try {
-		MyTask.terminateFlag=true;
+		PythonCommands.terminateFlag=true;
 		soc.close();
 		ss.close();
+		appRunning = false;
 	} catch (IOException e) {
 		e.printStackTrace();
+	}
 	}
 	
 	
@@ -199,60 +203,60 @@ public void run(){
 
 private void updateVelocityArrays()
 {
-	if(MyTask.daCommand.startsWith("velJDC_"))
+	if(PythonCommands.daCommand.startsWith("velJDC_"))
 	{
-		boolean tempBool=getJointsVelocitiesForVelocityContrtolMode(MyTask.daCommand);
+		boolean tempBool=getJointsVelocitiesForVelocityContrtolMode(PythonCommands.daCommand);
 		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 		if(tempBool==false)
 		{
-		MyTask.directSmart_ServoMotionFlag=false;
+		PythonCommands.directSmart_ServoMotionFlag=false;
 		}
 		this.sendCommand(ack);
-		MyTask.daCommand="";
+		PythonCommands.daCommand="";
 	}
-	else if(MyTask.daCommand.startsWith("velJDCExT_"))
+	else if(PythonCommands.daCommand.startsWith("velJDCExT_"))
 	{
-		boolean tempBool=getJointsVelocitiesForVelocityContrtolMode(MyTask.daCommand);
+		boolean tempBool=getJointsVelocitiesForVelocityContrtolMode(PythonCommands.daCommand);
 		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 		if(tempBool==false)
 		{
-		MyTask.directSmart_ServoMotionFlag=false;
+		PythonCommands.directSmart_ServoMotionFlag=false;
 		}
-		MyTask.svr.sendJointsExternalTorquesToClient();
-		MyTask.daCommand="";
+		PythonCommands.svr.sendJointsExternalTorquesToClient();
+		PythonCommands.daCommand="";
 	}
-	else if(MyTask.daCommand.startsWith("velJDCMT_"))
+	else if(PythonCommands.daCommand.startsWith("velJDCMT_"))
 	{
-		boolean tempBool=getJointsVelocitiesForVelocityContrtolMode(MyTask.daCommand);
+		boolean tempBool=getJointsVelocitiesForVelocityContrtolMode(PythonCommands.daCommand);
 		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 		if(tempBool==false)
 		{
-		MyTask.directSmart_ServoMotionFlag=false;
+		PythonCommands.directSmart_ServoMotionFlag=false;
 		}
-		MyTask.svr.sendJointsMeasuredTorquesToClient();
-		MyTask.daCommand="";
+		PythonCommands.svr.sendJointsMeasuredTorquesToClient();
+		PythonCommands.daCommand="";
 	}
-	else if(MyTask.daCommand.startsWith("velJDCEEfP_"))
+	else if(PythonCommands.daCommand.startsWith("velJDCEEfP_"))
 	{
-		boolean tempBool=getJointsVelocitiesForVelocityContrtolMode(MyTask.daCommand);
+		boolean tempBool=getJointsVelocitiesForVelocityContrtolMode(PythonCommands.daCommand);
 		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 		if(tempBool==false)
 		{
-		MyTask.directSmart_ServoMotionFlag=false;
+		PythonCommands.directSmart_ServoMotionFlag=false;
 		}
-		MyTask.svr.sendEEFforcesToClient();
-		MyTask.daCommand="";
+		PythonCommands.svr.sendEEFforcesToClient();
+		PythonCommands.daCommand="";
 	}
-	else if(MyTask.daCommand.startsWith("velJDCJP_"))
+	else if(PythonCommands.daCommand.startsWith("velJDCJP_"))
 	{
-		boolean tempBool=getJointsVelocitiesForVelocityContrtolMode(MyTask.daCommand);
+		boolean tempBool=getJointsVelocitiesForVelocityContrtolMode(PythonCommands.daCommand);
 		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 		if(tempBool==false)
 		{
-		MyTask.directSmart_ServoMotionFlag=false;
+		PythonCommands.directSmart_ServoMotionFlag=false;
 		}
-		MyTask.svr.sendJointsPositionsToClient();
-		MyTask.daCommand="";
+		PythonCommands.svr.sendJointsPositionsToClient();
+		PythonCommands.daCommand="";
 	}
 }
 
@@ -262,60 +266,60 @@ private void updateEEFPositionArray()
 	//Start of server update functions
 	/////////////////////////////////////////////////////						
 	
-	if(MyTask.daCommand.startsWith("DcSeCar_"))
+	if(PythonCommands.daCommand.startsWith("DcSeCar_"))
 	{
-		boolean tempBool=getThePositions(MyTask.daCommand);
+		boolean tempBool=getThePositions(PythonCommands.daCommand);
 		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 		if(tempBool==false)
 		{
-		MyTask.directSmart_ServoMotionFlag=false;
+		PythonCommands.directSmart_ServoMotionFlag=false;
 		}
 		// this.sendCommand(ack);
-		MyTask.daCommand="";
+		PythonCommands.daCommand="";
 	}
-	else if(MyTask.daCommand.startsWith("DcSeCarExT_"))
+	else if(PythonCommands.daCommand.startsWith("DcSeCarExT_"))
 	{
-		boolean tempBool=getTheJoints(MyTask.daCommand);
+		boolean tempBool=getTheJoints(PythonCommands.daCommand);
 		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 		if(tempBool==false)
 		{
-		MyTask.directSmart_ServoMotionFlag=false;
+		PythonCommands.directSmart_ServoMotionFlag=false;
 		}
-		MyTask.svr.sendJointsExternalTorquesToClient();
-		MyTask.daCommand="";
+		PythonCommands.svr.sendJointsExternalTorquesToClient();
+		PythonCommands.daCommand="";
 	}
-	else if(MyTask.daCommand.startsWith("DcSeCarMT_"))
+	else if(PythonCommands.daCommand.startsWith("DcSeCarMT_"))
 	{
-		boolean tempBool=getTheJoints(MyTask.daCommand);
+		boolean tempBool=getTheJoints(PythonCommands.daCommand);
 		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 		if(tempBool==false)
 		{
-		MyTask.directSmart_ServoMotionFlag=false;
+		PythonCommands.directSmart_ServoMotionFlag=false;
 		}
-		MyTask.svr.sendJointsMeasuredTorquesToClient();
-		MyTask.daCommand="";
+		PythonCommands.svr.sendJointsMeasuredTorquesToClient();
+		PythonCommands.daCommand="";
 	}
-	else if(MyTask.daCommand.startsWith("DcSeCarEEfP_"))
+	else if(PythonCommands.daCommand.startsWith("DcSeCarEEfP_"))
 	{
-		boolean tempBool=getTheJoints(MyTask.daCommand);
+		boolean tempBool=getTheJoints(PythonCommands.daCommand);
 		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 		if(tempBool==false)
 		{
-		MyTask.directSmart_ServoMotionFlag=false;
+		PythonCommands.directSmart_ServoMotionFlag=false;
 		}
-		MyTask.svr.sendEEFforcesToClient();
-		MyTask.daCommand="";
+		PythonCommands.svr.sendEEFforcesToClient();
+		PythonCommands.daCommand="";
 	}
-	else if(MyTask.daCommand.startsWith("DcSeCarJP_"))
+	else if(PythonCommands.daCommand.startsWith("DcSeCarJP_"))
 	{
-		boolean tempBool=getTheJoints(MyTask.daCommand);
+		boolean tempBool=getTheJoints(PythonCommands.daCommand);
 		// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 		if(tempBool==false)
 		{
-		MyTask.directSmart_ServoMotionFlag=false;
+		PythonCommands.directSmart_ServoMotionFlag=false;
 		}
-		MyTask.svr.sendJointsPositionsToClient();
-		MyTask.daCommand="";
+		PythonCommands.svr.sendJointsPositionsToClient();
+		PythonCommands.daCommand="";
 	}
 	
 	//////////////////////////////////////////////////
@@ -336,7 +340,7 @@ private boolean getThePositions(String thestring) {
 					//getLogger().warn(jointString);
 					try
 					{
-						MyTask.EEfServoPos[j]=Double.parseDouble(st.nextToken());
+						PythonCommands.EEfServoPos[j]=Double.parseDouble(st.nextToken());
 					}
 					catch(Exception e)
 					{
@@ -345,7 +349,7 @@ private boolean getThePositions(String thestring) {
 				}					
 				j++;
 			}
-			MyTask.daCommand="";
+			PythonCommands.daCommand="";
 			return true;
 			
 		}
@@ -368,7 +372,7 @@ private boolean getJointsVelocitiesForVelocityContrtolMode(String thestring) {
 					//getLogger().warn(jointString);
 					try
 					{
-						MyTask.jvel[j]=
+						PythonCommands.jvel[j]=
 						Double.parseDouble(st.nextToken());
 					}
 					catch(Exception e)
@@ -378,7 +382,7 @@ private boolean getJointsVelocitiesForVelocityContrtolMode(String thestring) {
 				}					
 				j++;
 			}
-			MyTask.daCommand="";
+			PythonCommands.daCommand="";
 			return true;
 			
 		}
@@ -395,60 +399,60 @@ private void updateJointsPositionArray()
 	//Start of server update functions
 	/////////////////////////////////////////////////////						
 	
-	if(MyTask.daCommand.startsWith("jp_"))
+	if(PythonCommands.daCommand.startsWith("jp_"))
 	{
-	boolean tempBool=getTheJoints(MyTask.daCommand);
+	boolean tempBool=getTheJoints(PythonCommands.daCommand);
 	// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 	if(tempBool==false)
 	{
-	MyTask.directSmart_ServoMotionFlag=false;
+	PythonCommands.directSmart_ServoMotionFlag=false;
 	}
 	this.sendCommand(ack);
-	MyTask.daCommand="";
+	PythonCommands.daCommand="";
 	}
-	else if(MyTask.daCommand.startsWith("jpExT_"))
+	else if(PythonCommands.daCommand.startsWith("jpExT_"))
 	{
-	boolean tempBool=getTheJoints(MyTask.daCommand);
+	boolean tempBool=getTheJoints(PythonCommands.daCommand);
 	// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 	if(tempBool==false)
 	{
-	MyTask.directSmart_ServoMotionFlag=false;
+	PythonCommands.directSmart_ServoMotionFlag=false;
 	}
-	MyTask.svr.sendJointsExternalTorquesToClient();
-	MyTask.daCommand="";
+	PythonCommands.svr.sendJointsExternalTorquesToClient();
+	PythonCommands.daCommand="";
 	}
-	else if(MyTask.daCommand.startsWith("jpMT_"))
+	else if(PythonCommands.daCommand.startsWith("jpMT_"))
 	{
-	boolean tempBool=getTheJoints(MyTask.daCommand);
+	boolean tempBool=getTheJoints(PythonCommands.daCommand);
 	// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 	if(tempBool==false)
 	{
-	MyTask.directSmart_ServoMotionFlag=false;
+	PythonCommands.directSmart_ServoMotionFlag=false;
 	}
-	MyTask.svr.sendJointsMeasuredTorquesToClient();
-	MyTask.daCommand="";
+	PythonCommands.svr.sendJointsMeasuredTorquesToClient();
+	PythonCommands.daCommand="";
 	}
-	else if(MyTask.daCommand.startsWith("jpEEfP_"))
+	else if(PythonCommands.daCommand.startsWith("jpEEfP_"))
 	{
-	boolean tempBool=getTheJoints(MyTask.daCommand);
+	boolean tempBool=getTheJoints(PythonCommands.daCommand);
 	// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 	if(tempBool==false)
 	{
-	MyTask.directSmart_ServoMotionFlag=false;
+	PythonCommands.directSmart_ServoMotionFlag=false;
 	}
-	MyTask.svr.sendEEFforcesToClient();
-	MyTask.daCommand="";
+	PythonCommands.svr.sendEEFforcesToClient();
+	PythonCommands.daCommand="";
 	}
-	else if(MyTask.daCommand.startsWith("jpJP_"))
+	else if(PythonCommands.daCommand.startsWith("jpJP_"))
 	{
-	boolean tempBool=getTheJoints(MyTask.daCommand);
+	boolean tempBool=getTheJoints(PythonCommands.daCommand);
 	// MatlabToolboxServer.printMessage(MatlabToolboxServer.daCommand);
 	if(tempBool==false)
 	{
-	MyTask.directSmart_ServoMotionFlag=false;
+	PythonCommands.directSmart_ServoMotionFlag=false;
 	}
-	MyTask.svr.sendJointsPositionsToClient();
-	MyTask.daCommand="";
+	PythonCommands.svr.sendJointsPositionsToClient();
+	PythonCommands.daCommand="";
 	}
 	
 	//////////////////////////////////////////////////
@@ -460,104 +464,104 @@ private void updateJointsPositionArray()
 private void dataAqcuisitionRequest()
 {
 	// Inquiring data from server
-	if(MyTask.daCommand.startsWith("getJointsPositions"))
+	if(PythonCommands.daCommand.startsWith("getJointsPositions"))
 	{
-		MyTask.svr.sendJointsPositionsToClient();
+		PythonCommands.svr.sendJointsPositionsToClient();
 		//sendCommand(ack); //this was added!
 		
-		MyTask.daCommand="";
+		PythonCommands.daCommand="";
 	}        	
 	// Write output of Mediaflange
-	else if(MyTask.daCommand.startsWith("blueOn"))
+	else if(PythonCommands.daCommand.startsWith("blueOn"))
 	{
-		MyTask.mff.blueOn();
+		PythonCommands.mff.blueOn();
 		sendCommand(ack);
-		MyTask.daCommand="";
+		PythonCommands.daCommand="";
 	}
-	else if(MyTask.daCommand.startsWith("blueOff"))
+	else if(PythonCommands.daCommand.startsWith("blueOff"))
 	{
-		MyTask.mff.blueOff();
+		PythonCommands.mff.blueOff();
 		sendCommand(ack);
-		MyTask.daCommand="";
+		PythonCommands.daCommand="";
 	}
-	else if(MyTask.daCommand.startsWith("pin"))
+	else if(PythonCommands.daCommand.startsWith("pin"))
 	{
-    	if(MyTask.daCommand.startsWith("pin1on"))
+    	if(PythonCommands.daCommand.startsWith("pin1on"))
 		{
-    		MyTask.mff.pin1On();
+    		PythonCommands.mff.pin1On();
 			sendCommand(ack);
-			MyTask.daCommand="";
+			PythonCommands.daCommand="";
 		}
-		else if(MyTask.daCommand.startsWith("pin1off"))
+		else if(PythonCommands.daCommand.startsWith("pin1off"))
 		{
-			MyTask.mff.pin1Off();
+			PythonCommands.mff.pin1Off();
 			sendCommand(ack);
-			MyTask.daCommand="";
+			PythonCommands.daCommand="";
 		}
-		else if(MyTask.daCommand.startsWith("pin11on"))
+		else if(PythonCommands.daCommand.startsWith("pin11on"))
 		{
-			MyTask.mff.pin11On();
+			PythonCommands.mff.pin11On();
 			sendCommand(ack);
-			MyTask.daCommand="";
+			PythonCommands.daCommand="";
 		}
-		else if(MyTask.daCommand.startsWith("pin11off"))
+		else if(PythonCommands.daCommand.startsWith("pin11off"))
 		{
-			MyTask.mff.pin11Off();
+			PythonCommands.mff.pin11Off();
 			sendCommand(ack);
-			MyTask.daCommand="";
+			PythonCommands.daCommand="";
 		}
-		else if(MyTask.daCommand.startsWith("pin2on"))
+		else if(PythonCommands.daCommand.startsWith("pin2on"))
 		{
-			MyTask.mff.pin2On();
+			PythonCommands.mff.pin2On();
 			sendCommand(ack);
-			MyTask.daCommand="";
+			PythonCommands.daCommand="";
 		}
-		else if(MyTask.daCommand.startsWith("pin2off"))
+		else if(PythonCommands.daCommand.startsWith("pin2off"))
 		{
-			MyTask.mff.pin2Off();
+			PythonCommands.mff.pin2Off();
 			sendCommand(ack);
-			MyTask.daCommand="";
+			PythonCommands.daCommand="";
 		}
-		else if(MyTask.daCommand.startsWith("pin12on"))
+		else if(PythonCommands.daCommand.startsWith("pin12on"))
 		{
-			MyTask.mff.pin12On();
+			PythonCommands.mff.pin12On();
 			sendCommand(ack);
-			MyTask.daCommand="";
+			PythonCommands.daCommand="";
 		}
-		else if(MyTask.daCommand.startsWith("pin12off"))
+		else if(PythonCommands.daCommand.startsWith("pin12off"))
 		{
-			MyTask.mff.pin12Off();
+			PythonCommands.mff.pin12Off();
 			sendCommand(ack);
-			MyTask.daCommand="";
+			PythonCommands.daCommand="";
 		}
 	}
 	// Read input of Mediaflange
-	if(MyTask.daCommand.startsWith("getPin"))
+	if(PythonCommands.daCommand.startsWith("getPin"))
 	{
-		if(MyTask.daCommand.startsWith("getPin10"))
+		if(PythonCommands.daCommand.startsWith("getPin10"))
 		{
-			MyTask.mff.getPin10();
-			MyTask.daCommand="";
+			PythonCommands.mff.getPin10();
+			PythonCommands.daCommand="";
 		}
-		else if(MyTask.daCommand.startsWith("getPin16"))
+		else if(PythonCommands.daCommand.startsWith("getPin16"))
 		{
-			MyTask.mff.getPin16();
-			MyTask.daCommand="";
+			PythonCommands.mff.getPin16();
+			PythonCommands.daCommand="";
 		}
-		else if(MyTask.daCommand.startsWith("getPin13"))
+		else if(PythonCommands.daCommand.startsWith("getPin13"))
 		{
-			MyTask.mff.getPin13();
-			MyTask.daCommand="";
+			PythonCommands.mff.getPin13();
+			PythonCommands.daCommand="";
 		}
-		else if(MyTask.daCommand.startsWith("getPin3"))
+		else if(PythonCommands.daCommand.startsWith("getPin3"))
 		{
-			MyTask.mff.getPin3();
-			MyTask.daCommand="";
+			PythonCommands.mff.getPin3();
+			PythonCommands.daCommand="";
 		}
-		else if(MyTask.daCommand.startsWith("getPin4"))
+		else if(PythonCommands.daCommand.startsWith("getPin4"))
 		{
-			MyTask.mff.getPin4();
-			MyTask.daCommand="";
+			PythonCommands.mff.getPin4();
+			PythonCommands.daCommand="";
 		}
 	}
 }
@@ -583,12 +587,12 @@ private boolean getTheJoints(String thestring)
 				if(j<7)
 				{
 					//getLogger().warn(jointString);
-					MyTask.jpos[j]=Double.parseDouble(jointString);
+					PythonCommands.jpos[j]=Double.parseDouble(jointString);
 				}
 				
 				j++;
 			}
-			MyTask.daCommand="";
+			PythonCommands.daCommand="";
 			return true;
 			
 		}
@@ -621,7 +625,7 @@ private boolean getTheJointsf(String thestring)
 				if(j<7)
 				{
 					//getLogger().warn(jointString);
-					MyTask.jpos[j]=Double.parseDouble(jointString);
+					PythonCommands.jpos[j]=Double.parseDouble(jointString);
 				}
 				
 				j++;
@@ -655,12 +659,12 @@ private boolean getEEFpos(String thestring)
 				if(j<6)
 				{
 					//getLogger().warn(jointString);
-					MyTask.EEFpos[j]=Double.parseDouble(jointString);
+					PythonCommands.EEFpos[j]=Double.parseDouble(jointString);
 				}
 				
 				j++;
 			}
-			MyTask.daCommand="";
+			PythonCommands.daCommand="";
 			return true;
 			
 		}
@@ -691,12 +695,12 @@ private boolean getEEFposCirc2(String thestring)
 				if(j<6)
 				{
 					//getLogger().warn(jointString);
-					MyTask.EEFposCirc2[j]=Double.parseDouble(jointString);
+					PythonCommands.EEFposCirc2[j]=Double.parseDouble(jointString);
 				}
 				
 				j++;
 			}
-			MyTask.daCommand="";
+			PythonCommands.daCommand="";
 			return true;
 			
 		}
@@ -727,12 +731,12 @@ private boolean getEEFposCirc1(String thestring)
 				if(j<6)
 				{
 					//getLogger().warn(jointString);
-					MyTask.EEFposCirc1[j]=Double.parseDouble(jointString);
+					PythonCommands.EEFposCirc1[j]=Double.parseDouble(jointString);
 				}
 				
 				j++;
 			}
-			MyTask.daCommand="";
+			PythonCommands.daCommand="";
 			return true;
 			
 		}
@@ -783,6 +787,8 @@ public static boolean sendCommand(String s)
 			ss.close();
 		} catch (IOException e) {
 			e.printStackTrace();
+		}catch(Exception e){
+			//Nullpointer
 		}
 	}
 	
